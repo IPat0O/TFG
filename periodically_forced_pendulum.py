@@ -30,7 +30,7 @@ def poincare_map(y0, epsilon, t0=0.0):
 
 def generate_orbit(y0, epsilon, n_iterations):
     """
-    Generate an orbit for the periodically forced pendulum ODE,
+    Generate an orbit for the periodically forced pendulum ODE Poincaré map,
     keeping track of ongoing time for the non-autonomous system.
     """
     orbit = [y0]
