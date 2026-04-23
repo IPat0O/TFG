@@ -38,15 +38,17 @@ def dynamical_distance(t, trajectory_i, trajectory_j):
 
     return r_ij
 
-#Since W is symmetric, i calculate only the upper triangular part and then mirror it. but, should i save only the upper triangular part instead?
+#Since W is symmetric, i calculate only the upper triangular part and then mirror it. but, should i save only the upper triangular part instead? #TODO: think about this
 def get_similarity_matrix(t, trajectories, dimensions):
     """
     Calculates the pairwise similarity scores w_ij between all trajectories in the dataset.
     Each w_ij is calculated as w_ij = 1/r_ij, where r_ij is a distance measure between the i-th and j-th trajectories.
     Returns a matrix of shape n x n, with elements the similarity scores w_ij.
     """
+   
     n, m, d = dimensions
     W = np.zeros((n, n))
+
     for i in range(n):
         for j in range(i, n):
             if i == j:
@@ -60,6 +62,13 @@ def get_similarity_matrix(t, trajectories, dimensions):
                     W[i, j] = w_ij
                     W[j, i] = w_ij
     return W
+
+def get_degree_matrix(W):
+    """
+    Calculates the degree matrix D of the similarity matrix W.
+    Returns a diagonal matrix of shape n x n, with elements the degrees of the nodes.
+    """
+    return np.diag(np.sum(W, axis=1)) #should i store only the diagonal elements? #TODO: think about this, and the above, depends on hoe python stores matrices.
 
 def save_similarity_matrix(W, filename):
     """
