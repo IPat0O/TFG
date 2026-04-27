@@ -41,7 +41,7 @@ def dynamical_distance(t, trajectory_i, trajectory_j):
     return r_ij
 
 #Since W is symmetric, i calculate only the upper triangular part and then mirror it. but, should i save only the upper triangular part instead? #TODO: think about this
-def get_similarity_matrix(t, trajectories, dimensions):
+def get_similarity_matrix(t, trajectories, dimensions, eps=eps):
     """
     Calculates the pairwise similarity scores w_ij between all trajectories in the dataset.
     Each w_ij is calculated as w_ij = 1/r_ij, where r_ij is a distance measure between the i-th and j-th trajectories.
