@@ -181,6 +181,25 @@ def generate_and_save_dataset():
     np.savez(dataset_path, t=t, trajectories=trajectories)
     print(f"Dataset successfully saved to {dataset_path}")
 
+def load_pendulum_dataset(dataset_path="data/periodically_forced_pendulum.npz"):
+    """
+    Load the periodically forced pendulum dataset from the given path.
+    Returns a tuple (t, trajectories) if successful, otherwise None.
+    """
+    if not os.path.exists(dataset_path):
+        print(f"Dataset not found at {dataset_path}")
+        return None
+
+    data = np.load(dataset_path, allow_pickle=True)
+    if "t" not in data:
+        print(f"Invalid dataset: missing 't' in {dataset_path}")
+        return None
+    if "trajectories" not in data:
+        print(f"Invalid dataset: missing 'trajectories' in {dataset_path}")
+        return None
+
+    return data["t"], data["trajectories"]
+
 def load_and_plot_dataset():
     """
     Load an existing periodically forced pendulum dataset and plot its trajectories.
@@ -189,22 +208,13 @@ def load_and_plot_dataset():
     x1_min, x1_max = -2.6, -0.3
     x2_min, x2_max = -1.2, 1.2
 
-    if not os.path.exists(dataset_path):
-        print(f"Dataset not found at {dataset_path}")
+    t, trajectories = load_pendulum_dataset(dataset_path) #dont need t to plot, for now
+    if trajectories is None:
         return
-
-    data = np.load(dataset_path, allow_pickle=True)
-
-    if "trajectories" not in data:
-        print(f"Invalid dataset: missing 'trajectories' in {dataset_path}")
-        return
-
-    trajectories = data["trajectories"]
 
     plt.figure(figsize=(8, 8))
 
     if trajectories.ndim == 3:
-        print("hello")
         for orbit in trajectories:
             plt.scatter(orbit[:, 0], orbit[:, 1], s=1)
     else:
