@@ -1,6 +1,8 @@
 import numpy as np
 
-dataset_path = "data/periodically_forced_pendulum.npy"
+dataset_path = "data/periodically_forced_pendulum.npz"
+similarity_matrix_path = "data/periodically_forced_pendulum_similarity_matrix.npz"
+
 K = 1e6
 eps = 0.45
 
@@ -9,8 +11,8 @@ def load_dataset(dataset_path):
     Load the dataset from the given path
     Returns a tuple (t, trajectories)
     """
-    dataset = np.load(dataset_path)
-    return dataset.t, dataset.trajectories #TODO: when generating dataset, use tbis naming convention
+    dataset = np.load(dataset_path, allow_pickle=True)
+    return dataset['t'], dataset['trajectories'] #TODO: when generating dataset, use tbis naming convention
 
 def get_dataset_dimensions(dataset):
     """
@@ -63,18 +65,24 @@ def get_similarity_matrix(t, trajectories, dimensions):
                     W[j, i] = w_ij
     return W
 
-def get_degree_matrix(W):
+def get_degree_matrix(W): #calculated after W is sparsified with eps-neighborhood strategy. is this okay? #TODO: think about this
     """
     Calculates the degree matrix D of the similarity matrix W.
     Returns a diagonal matrix of shape n x n, with elements the degrees of the nodes.
     """
-    return np.diag(np.sum(W, axis=1)) #should i store only the diagonal elements? #TODO: think about this, and the above, depends on hoe python stores matrices.
+    return np.diag(np.sum(W, axis=1)) #should i store only the diagonal elements? also, the huge term K is added to the diagonal. is this okay? #TODO: think about this, and the above in get_similarity_matrix, depends on hoe python stores matrices.
 
-def save_similarity_matrix(W, filename):
+def save_similarity_matrix(W, similarity_matrix_path):
     """
     Saves the similarity matrix to a file
     """
-    np.save(filename, W)
+    np.save(similarity_matrix_path, W)
+
+def load_similarity_matrix(similarity_matrix_path):
+    """
+    Loads the similarity matrix from a file
+    """
+    return np.load(similarity_matrix_path)
 
 def test_similarity_matrix():
     """
