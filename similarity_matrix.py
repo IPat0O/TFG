@@ -1,7 +1,9 @@
 import numpy as np
+from pathlib import Path #solves issues with paths when i tried debugging
 
-dataset_path = "data/periodically_forced_pendulum.npz"
-similarity_matrix_path = "data/periodically_forced_pendulum_similarity_matrix.npz"
+BASE_DIR = Path(__file__).parent.parent
+dataset_path = BASE_DIR / "code" / "data" / "periodically_forced_pendulum.npz"
+similarity_matrix_path = BASE_DIR / "code" / "data" / "periodically_forced_pendulum_similarity_matrix.npz"
 
 K = 1e6
 eps = 0.45
@@ -34,7 +36,14 @@ def dynamical_distance(t, trajectory_i, trajectory_j):
 
     sum = 0
     for k in range(len(t) - 1):
-        sum += (t[k+1] - t[k])/2 * (np.abs(trajectory_i[k+1] - trajectory_j[k+1]) + np.abs(trajectory_i[k] - trajectory_j[k]))
+        xi_current = trajectory_i[k]
+        xj_current = trajectory_j[k]
+        xi_next = trajectory_i[k + 1]
+        xj_next = trajectory_j[k + 1]
+
+        sum += (t[k + 1] - t[k]) / 2 * (
+            np.linalg.norm(xi_next - xj_next) + np.linalg.norm(xi_current - xj_current)
+        )
 
     r_ij = sum / (t_end - t_0)
 
