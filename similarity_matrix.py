@@ -60,6 +60,9 @@ def get_similarity_matrix(t, trajectories, dimensions, eps=eps):
     n, m, d = dimensions
     W = np.zeros((n, n))
 
+    total_pairs = (n * (n + 1)) // 2
+    computed_pairs = 0
+
     for i in range(n):
         for j in range(i, n):
             if i == j:
@@ -72,6 +75,11 @@ def get_similarity_matrix(t, trajectories, dimensions, eps=eps):
                 else:
                     W[i, j] = w_ij
                     W[j, i] = w_ij
+            computed_pairs += 1
+            if computed_pairs % 100 == 0 or computed_pairs == total_pairs:
+                progress = computed_pairs / total_pairs * 100
+                print(f"\rComputing similarity matrix: {computed_pairs}/{total_pairs} ({progress:.1f}%)", end='', flush=True)
+    print("\nSimilarity matrix computation completed.")
     return W
 
 def get_degree_matrix(W): #calculated after W is sparsified with eps-neighborhood strategy. is this okay? #TODO: think about this
@@ -81,6 +89,7 @@ def get_degree_matrix(W): #calculated after W is sparsified with eps-neighborhoo
     """
     return np.diag(np.sum(W, axis=1)) #should i store only the diagonal elements? also, the huge term K is added to the diagonal. is this okay? #TODO: think about this, and the above in get_similarity_matrix, depends on hoe python stores matrices.
 
+#TODO: use scipy.sparse.save_npz instead of np.save
 def save_similarity_matrix(W, similarity_matrix_path):
     """
     Saves the similarity matrix to a file
