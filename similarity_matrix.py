@@ -4,7 +4,7 @@ import os
 
 BASE_DIR = Path(__file__).parent.parent
 dataset_path = BASE_DIR / "code" / "data" / "periodically_forced_pendulum.npz"
-similarity_matrix_path = BASE_DIR / "code" / "data" / "periodically_forced_pendulum_similarity_matrix.npz"
+similarity_matrix_path = BASE_DIR / "code" / "data" / "periodically_forced_pendulum_similarity_matrix"
 
 K = 1e6
 eps = 0.45
@@ -75,7 +75,7 @@ def get_similarity_matrix(t, trajectories, dimensions):
                 W[j, i] = w_ij
 
             computed_pairs += 1
-            if computed_pairs % 100 == 0 or computed_pairs == total_pairs:
+            if computed_pairs % 10000 == 0 or computed_pairs == total_pairs:
                 progress = computed_pairs / total_pairs * 100
                 print(f"\rComputing similarity matrix: {computed_pairs}/{total_pairs} ({progress:.1f}%)", end='', flush=True)
     print("\nSimilarity matrix computation completed.")
@@ -90,15 +90,15 @@ def get_degree_matrix(W): #calculated after W is sparsified with eps-neighborhoo
 
 def save_similarity_matrix(W, similarity_matrix_path):
     """
-    Saves the similarity matrix to a file
+    Saves the similarity matrix to the specified path in the form of a numpy array.
     """
     np.save(similarity_matrix_path, W)
 
-def load_similarity_matrix(similarity_matrix_path):
+def load_similarity_matrix(similarity_matrix_filename):
     """
-    Loads the similarity matrix from a file
+    Loads the similarity matrix from the specified path in the form of a numpy array.
     """
-    return np.load(similarity_matrix_path)
+    return np.load(similarity_matrix_filename)
 
 def test_similarity_matrix():
     """
