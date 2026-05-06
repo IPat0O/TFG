@@ -86,7 +86,11 @@ def get_degree_matrix(W): #calculated after W is sparsified with eps-neighborhoo
     Calculates the degree matrix D of the similarity matrix W.
     Returns a diagonal matrix of shape n x n, with elements the degrees of the nodes.
     """
-    return np.diag(np.sum(W, axis=1)) #should i store only the diagonal elements? also, the huge term K is added to the diagonal. is this okay? #TODO: think about this, and the above in get_similarity_matrix, depends on hoe python stores matrices.
+    # Exclude the diagonal elements (W[i,i]) from the degree sum
+    #W_no_diag = W.copy()
+    #np.fill_diagonal(W_no_diag, 0)
+    #return np.diag(np.sum(W_no_diag, axis=1))
+    return np.diag(np.sum(W, axis=1))
 
 def save_similarity_matrix(W, similarity_matrix_path):
     """
