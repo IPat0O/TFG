@@ -200,9 +200,12 @@ def load_pendulum_dataset(dataset_path="data/periodically_forced_pendulum.npz"):
 
     return data["t"], data["trajectories"]
 
-def load_and_plot_dataset():
+def load_and_plot_dataset(mask_indices=None, mask_title=None, labels=None, cmap="tab10"):
     """
     Load an existing periodically forced pendulum dataset and plot its trajectories.
+    If mask_indices is provided, plot only the trajectories corresponding to the mask indices.
+    If mask_title is provided, use it as the title of the plot.
+    If labels is provided, color each trajectory according to its label.
     """
     dataset_path = "data/periodically_forced_pendulum.npz"
     x1_min, x1_max = -2.6, -0.3
@@ -212,21 +215,47 @@ def load_and_plot_dataset():
     if trajectories is None:
         return
 
+    if mask_indices is not None:
+        trajectories = trajectories[mask_indices]
+
+    if labels is not None:
+        labels = np.asarray(labels)
+        if labels.ndim != 1:
+            raise ValueError("labels must be a 1D array-like.")
+        if len(labels) != len(trajectories):
+            raise ValueError(
+                "labels length must match the number of plotted trajectories "
+                f"({len(labels)} != {len(trajectories)})."
+            )
+        color_map = plt.get_cmap(cmap)
+    else:
+        color_map = None
+
     plt.figure(figsize=(8, 8))
 
     if trajectories.ndim == 3:
-        for orbit in trajectories:
-            plt.scatter(orbit[:, 0], orbit[:, 1], s=1)
+        for idx, orbit in enumerate(trajectories):
+            if labels is not None:
+                color = color_map(int(labels[idx]) % color_map.N)
+                plt.scatter(orbit[:, 0], orbit[:, 1], s=1, color=color)
+            else:
+                plt.scatter(orbit[:, 0], orbit[:, 1], s=1)
     else:
-        # Handles object arrays from list-based saves.
-        for orbit in trajectories:
+        for idx, orbit in enumerate(trajectories):
             orbit = np.asarray(orbit)
             if orbit.ndim == 2 and orbit.shape[1] == 2:
-                plt.scatter(orbit[:, 0], orbit[:, 1], s=1)
+                if labels is not None:
+                    color = color_map(int(labels[idx]) % color_map.N)
+                    plt.scatter(orbit[:, 0], orbit[:, 1], s=1, color=color)
+                else:
+                    plt.scatter(orbit[:, 0], orbit[:, 1], s=1)
 
     plt.xlabel(r"$x_1$")
     plt.ylabel(r"$x_2$")
-    plt.title("Orbits in Phase Space from Saved Dataset")
+    if mask_title is not None:
+        plt.title(f"Orbits in Phase Space from Saved Dataset {mask_title}") #TODO: correct nomenclature of the title. applies to other plots as well.
+    else:
+        plt.title("Orbits in Phase Space from Saved Dataset")
     plt.xlim(x1_min, x1_max)
     plt.ylim(x2_min, x2_max)
     plt.gca().set_aspect("equal", adjustable="box")
