@@ -1,12 +1,12 @@
 import numpy as np
 from scipy.linalg import eigh
 from periodically_forced_pendulum import load_and_plot_dataset
-from similarity_matrix import load_similarity_matrix, get_degree_matrix
+from similarity_matrix import load_similarity_matrix, get_degree_matrix, plot_similarity_matrix_heatmap
 from pathlib import Path
 import matplotlib.pyplot as plt
 
 similarity_matrix_filename = Path(__file__).parent.parent / "code" / "data" / "periodically_forced_pendulum_similarity_matrix.npy"
-eps = 0.45
+distance_threshold_eps = 0.60
 
 #Input
 
@@ -18,10 +18,14 @@ print("leading elements of W: \n", W[:5, :5], "\n\n")
 
 print("Step 1: Sparsify W and remove nodes with degree 0.\n")
 
-W[W < eps] = 0 #TODO: test in actually removing all the nodes with degree 0.
+similarity_threshold = 1 / distance_threshold_eps
+W[W < similarity_threshold] = 0
 
-print("0s in W: ", np.sum(W == 0))
+number_of_0s = np.sum(W == 0)
+print("0s in W: ", number_of_0s)
+print(f"percentage of non 0 elements (those that are kept) in W: {(W.size - number_of_0s) / W.size * 100:.2f}%")
 print("leading elements of W after sparsification: \n", W[:5, :5], "\n\n")
+plot_similarity_matrix_heatmap(W, title="W before sparsification")
 
 num_degree_zero = np.sum(np.sum(W - np.diag(np.diag(W)), axis=1) == 0)
 print(f"Number of nodes with degree 0: {num_degree_zero}\n\n")
@@ -32,15 +36,17 @@ W_sparse = W[nonzero_degree_mask][:, nonzero_degree_mask]
 W_sparse_indices = np.where(nonzero_degree_mask)[0]
 print("W_sparse.shape:", W_sparse.shape)
 print("Leading elements of W_sparse: \n", W_sparse[:5, :5], "\n\n")
-print("Indices of non-zero-degree nodes: \n", W_sparse_indices[:5], "\n\n")
+print("Indices of leading non-zero-degree nodes: \n", W_sparse_indices[:5], "\n\n")
 
-load_and_plot_dataset(mask_indices=W_sparse_indices, mask_title="after removing nodes with degree 0")
+load_and_plot_dataset(mask_indices=W_sparse_indices) #, mask_title="after removing nodes with degree 0")
+
+plot_similarity_matrix_heatmap(W_sparse, title="W after sparsification")
 
 #2. calculate the Laplacian matrix L = D - W and solve generalized eigenvalue problem Lu = lambda Du
 
 print("Step 2: Calculating Laplacian matrix L = D - W and solving generalized eigenvalue problem Lu = lambda Du.\n")
 
-#D = get_degree_matrix(W) #TODO: test in not including the huge term K in the diagonal.
+#D = get_degree_matrix(W)
 #L = D - W
 D = get_degree_matrix(W_sparse)
 L = D - W_sparse
@@ -52,7 +58,7 @@ eigenvalues, eigenvectors = eigh(L, D) #eigenvalues are already sorted in ascend
 print("leading eigenvalues: \n", eigenvalues[:5], "\n\n")
 
 plt.figure(figsize=(8, 5))
-plt.plot(np.arange(len(eigenvalues)), eigenvalues, marker='o')
+plt.plot(1 + np.arange(len(eigenvalues)), eigenvalues, marker='o')
 plt.xlabel("Index of eigenvalue")
 plt.ylabel("Eigenvalue")
 plt.title("Sorted eigenvalues of Generalized Laplacian vs Index")
@@ -88,21 +94,23 @@ def estimate_k_by_eigengap(eigenvalues, max_k=None):
 
 
 k, gaps = estimate_k_by_eigengap(eigenvalues)
-cluster_indicators = eigenvectors[:, :k]
+cluster_indicators = eigenvectors[:, :k] #TODO: why is the number of cluster indicatorss inconsistent when choosing differents eps?
 
 print(f"Selected number of coherent clusters (k): {k}\n")
 print("Leading eigengaps: \n", gaps[: min(10, len(gaps))], "\n")
 print("cluster indicators shape: ", cluster_indicators.shape, "\n\n")
 
-#show eigengaps used to pick k.
+# Show eigengaps used to pick k, force integer ticks and step for x-axis (index counter)
 plt.figure(figsize=(8, 4))
-plt.plot(np.arange(1, len(gaps) + 1), gaps, marker="o")
+x_vals = np.arange(1, len(gaps) + 1)
+plt.plot(x_vals, gaps, marker="o")
 plt.axvline(k, color="r", linestyle="--", label=f"selected k = {k}")
 plt.xlabel("k (gap between lambda_k and lambda_{k+1})")
 plt.ylabel("Eigengap")
 plt.title("Eigengap heuristic for coherent cluster count")
 plt.grid()
 plt.legend()
+plt.xticks(x_vals)  # force integer ticks at each index value
 plt.tight_layout()
 plt.show()
 
@@ -113,16 +121,17 @@ print("Step 4: Applying K-means clustering to extract clusters.\n")
 from scipy.cluster.vq import kmeans2
 
 U = cluster_indicators
-K_clusters = k + 1
+K_clusters = k #+ 1 #TODO: at this resolution, doing eps neighbrohood sparsing takes out all the orbits from the incoherent set, so there is no +1 to search for. thik about what can be conde. remove the +1 for lower reses?
 
 # Normalize rows of U to unit length (often helps spectral clustering, 
 # though basic Algorithm 1 doesn't strictly mandate it, it's standard practice)
 # U_norm = U / np.linalg.norm(U, axis=1, keepdims=True) 
 
-# Run K-means in spectral space R^k. 'minit' can be 'points' or 'random'. 'points' usually more stable.
-centroids, labels = kmeans2(U, K_clusters, minit='points', iter=100)
+# K-means in spectral space R^k
+centroids, labels = kmeans2(U, K_clusters, minit='++', iter=1000)
 
-print(f"Clustering complete. Assigned {len(labels)} trajectories to {K_clusters} clusters.")
+
+print(f"Clustering complete. Assigned {len(labels)} trajectories to K = {K_clusters} clusters.")
 
 
 # To plot this back in physical space, we map the labels to the original grid indices
@@ -133,7 +142,9 @@ full_labels[nonzero_degree_mask] = labels
 print("Cluster labels (first 20):", labels[:20])
 
 load_and_plot_dataset(
-    mask_indices=W_sparse_indices,
+    ic_only=True,
     mask_title="colored by clustering label",
-    labels=labels,
+    #mask_indices=W_sparse_indices,
+    labels=full_labels,
+    #labels=labels,
 )

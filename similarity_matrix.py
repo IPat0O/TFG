@@ -1,6 +1,7 @@
 import numpy as np
 from pathlib import Path #solves issues with paths when i tried debugging
 import os
+import matplotlib.pyplot as plt
 
 BASE_DIR = Path(__file__).parent.parent
 dataset_path = BASE_DIR / "code" / "data" / "periodically_forced_pendulum.npz"
@@ -15,7 +16,7 @@ def load_dataset(dataset_path):
     Returns a tuple (t, trajectories)
     """
     dataset = np.load(dataset_path, allow_pickle=True)
-    return dataset['t'], dataset['trajectories'] #TODO: when generating dataset, use tbis naming convention
+    return dataset['t'], dataset['trajectories']
 
 def get_dataset_dimensions(dataset):
     """
@@ -50,7 +51,7 @@ def dynamical_distance(t, trajectory_i, trajectory_j):
 
     return r_ij
 
-#Since W is symmetric, i calculate only the upper triangular part and then mirror it. but, should i save only the upper triangular part instead? #TODO: think about this
+#Since W is symmetric, i calculate only the upper triangular part and then mirror it. but, should i save only the upper triangular part instead? #TODO: think about this. its not that relevant at this scale.
 def get_similarity_matrix(t, trajectories, dimensions):
     """
     Calculates the pairwise similarity scores w_ij between all trajectories in the dataset.
@@ -103,6 +104,83 @@ def load_similarity_matrix(similarity_matrix_filename):
     Loads the similarity matrix from the specified path in the form of a numpy array.
     """
     return np.load(similarity_matrix_filename)
+
+
+def _mask_to_indices(mask, n):
+    """
+    Convert a boolean mask or index array to integer indices for submatrix selection.
+    """
+    mask = np.asarray(mask)
+    if mask.dtype == bool:
+        if mask.shape != (n,):
+            raise ValueError(f"Boolean mask must have length {n}, got {mask.shape}.")
+        return np.where(mask)[0]
+    return mask.astype(int)
+
+
+def plot_similarity_matrix_heatmap(
+    W,
+    mask=None,
+    title=None,
+    cmap="viridis",
+    exclude_diagonal_from_scale=True,
+    show=True,
+):
+    """
+    Plot a heatmap of the similarity matrix W, optionally restricted by a mask.
+
+    Parameters
+    ----------
+    W : ndarray, shape (n, n)
+        Similarity matrix.
+    mask : array-like, optional
+        Boolean mask of length n, or 1D integer indices selecting rows/columns.
+        If None, the full matrix is plotted.
+    title : str, optional
+        Plot title.
+    cmap : str
+        Matplotlib colormap name.
+    exclude_diagonal_from_scale : bool
+        If True, color limits ignore diagonal entries (useful when W[i,i] = K is huge).
+    show : bool
+        If True, call plt.show().
+    """
+    W = np.asarray(W)
+    n = W.shape[0]
+    if W.ndim != 2 or W.shape[0] != W.shape[1]:
+        raise ValueError("W must be a square 2D array.")
+
+    if mask is not None:
+        idx = _mask_to_indices(mask, n)
+        W_plot = W[np.ix_(idx, idx)]
+    else:
+        W_plot = W
+
+    fig, ax = plt.subplots(figsize=(8, 7))
+    plot_data = W_plot.copy()
+    if exclude_diagonal_from_scale and plot_data.size > 0:
+        off_diag = plot_data.copy()
+        np.fill_diagonal(off_diag, np.nan)
+        vmin = np.nanmin(off_diag) if np.any(~np.isnan(off_diag)) else None
+        vmax = np.nanmax(off_diag) if np.any(~np.isnan(off_diag)) else None
+    else:
+        vmin = vmax = None
+
+    # W[i, j]: row i (y-axis), column j (x-axis) in imshow convention
+    im = ax.imshow(plot_data, cmap=cmap, aspect="equal", vmin=vmin, vmax=vmax)
+    ax.set_xlabel(r"$j$-th trajectory")
+    ax.set_ylabel(r"$i$-th trajectory")
+    if title is not None:
+        ax.set_title(title)
+    else:
+        ax.set_title(f"Similarity matrix heatmap ({W_plot.shape[0]} × {W_plot.shape[0]})")
+    fig.colorbar(im, ax=ax, label=r"$w_{ij}$")
+    fig.tight_layout()
+
+    if show:
+        plt.show()
+    return fig, ax
+
 
 def test_similarity_matrix():
     """
