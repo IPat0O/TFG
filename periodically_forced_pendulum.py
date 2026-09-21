@@ -289,7 +289,7 @@ def load_and_plot_dataset(ic_only=False, mask_indices=None, mask_title=None, lab
         # Sort legend by label
         handles_sorted = [legend_handles[key] for key in sorted(legend_handles)]
         labels_sorted = [f"Label {key}" for key in sorted(legend_handles)]
-        plt.legend(handles_sorted, labels_sorted, title="Labels", loc="best", markerscale=2, fontsize=10)
+        #plt.legend(handles_sorted, labels_sorted, title="Labels", loc="best", markerscale=2, fontsize=10)
 
     plt.show()
 

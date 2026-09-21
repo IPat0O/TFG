@@ -58,11 +58,12 @@ eigenvalues, eigenvectors = eigh(L, D) #eigenvalues are already sorted in ascend
 print("leading eigenvalues: \n", eigenvalues[:5], "\n\n")
 
 plt.figure(figsize=(8, 5))
-plt.plot(1 + np.arange(len(eigenvalues)), eigenvalues, marker='o')
-plt.xlabel("Index of eigenvalue")
-plt.ylabel("Eigenvalue")
-plt.title("Sorted eigenvalues of Generalized Laplacian vs Index")
-plt.grid()
+plt.plot(1 + np.arange(min(20, len(eigenvalues))), eigenvalues[: min(20, len(eigenvalues))], marker='o')
+plt.xlabel(r"$i$, index of eigenvalue")
+plt.ylabel(r"$\lambda_i$")
+#plt.title("Sorted eigenvalues of Generalized Laplacian vs Index")
+#plt.grid()
+plt.xticks(1 + np.arange(min(20, len(eigenvalues))))
 plt.tight_layout()
 plt.show()
 
@@ -104,11 +105,11 @@ print("cluster indicators shape: ", cluster_indicators.shape, "\n\n")
 plt.figure(figsize=(8, 4))
 x_vals = np.arange(1, len(gaps) + 1)
 plt.plot(x_vals, gaps, marker="o")
-plt.axvline(k, color="r", linestyle="--", label=f"selected k = {k}")
-plt.xlabel("k (gap between lambda_k and lambda_{k+1})")
-plt.ylabel("Eigengap")
-plt.title("Eigengap heuristic for coherent cluster count")
-plt.grid()
+plt.axvline(k, color="r", linestyle="--", label=f"selected $k = {k}$")
+plt.xlabel(r"$i$, index of eigenvalue")
+plt.ylabel(r"$\lambda_{i+1} - \lambda_i$")
+#plt.title("Eigengap heuristic for coherent cluster count")
+#plt.grid()
 plt.legend()
 plt.xticks(x_vals)  # force integer ticks at each index value
 plt.tight_layout()
@@ -143,7 +144,7 @@ print("Cluster labels (first 20):", labels[:20])
 
 load_and_plot_dataset(
     ic_only=True,
-    mask_title="colored by clustering label",
+    #mask_title="colored by clustering label",
     #mask_indices=W_sparse_indices,
     labels=full_labels,
     #labels=labels,
